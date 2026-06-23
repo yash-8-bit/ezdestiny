@@ -1,7 +1,9 @@
-export default function Home() {
+export default async function Home() {
+
   return (
-    <h1>
-      Viji Flow
-    </h1>
+    <div >
+      <h1>Viji Flow</h1>
+      
+    </div>
   );
 }

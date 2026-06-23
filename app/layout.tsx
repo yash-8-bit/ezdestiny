@@ -1,4 +1,9 @@
 import "./globals.css";
+import { Figtree } from "next/font/google";
+import { cn } from "@/lib/utils";
+
+const figtree = Figtree({subsets:['latin'],variable:'--font-sans'});
+
 
 export default function RootLayout({
   children,
@@ -8,9 +13,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`h-full antialiased`}
+      className={cn("h-full", "antialiased", "font-sans", figtree.variable)}
     >
-      <body className="min-h-full">{children}</body>
+      <body  className="dark min-h-full">{children}</body>
     </html>
   );
 }

@@ -1,0 +1,1 @@
+type MethodType = "GET" | "POST" | "DELETE" | "PUT" | "PATCH"
