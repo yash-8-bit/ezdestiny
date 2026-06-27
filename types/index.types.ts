@@ -21,3 +21,11 @@ interface AuthValues {
     username: string;
     password: string
 }
+interface CustomResponseType {
+    data: any;
+    type?: "data" | "information" | "error";
+    Datatype: "json" | "text";
+    subtype?: string;
+    statusCode: number;
+    totalTime: number;
+}

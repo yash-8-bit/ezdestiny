@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Spinner } from "@/components/ui/spinner"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -25,6 +26,9 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
+import dynamic from "next/dynamic";
+const ReactJson = dynamic(() => import("react-json-view"))
+
 
 const defaultformdata: FormDataInputs = {
     id: crypto.randomUUID(),
@@ -35,12 +39,11 @@ const defaultformdata: FormDataInputs = {
     file: null
 }
 
-
 const defaultheaders: CustomHeader[] = [
     {
         id: crypto.randomUUID(),
-        key: "Accept",
-        value: "*/*",
+        key: "X-Powered-By",
+        value: "VijiFlow",
         tick: true
     },
 ]
@@ -54,26 +57,46 @@ const defaultAuthValues: AuthValues = {
 
 const page = () => {
     const [url, setUrl] = useState<string>("");
-    const [res, setRes] = useState<string>("");
+    const [res, setRes] = useState<CustomResponseType | null>(null);
     const [bodyType, setBodyType] = useState<BodyType>("json");
     const [json, setJson] = useState<string>('');
     const [customHeaders, setCustomHeaders] = useState<CustomHeader[]>(defaultheaders);
     const [formData, setformData] = useState<FormDataInputs[]>([defaultformdata]);
     const [method, setMethod] = useState<MethodType>("GET");
-    const [authtype, setAuthType] = useState<AuthType>("bearerToken")
+    const [authtype, setAuthType] = useState<AuthType>("none")
     const [authValues, setAuthValues] = useState<AuthValues>(defaultAuthValues);
-
+    const [loading, setLoading] = useState<boolean>(false);
     async function handle(e: SubmitEvent<HTMLFormElement>) {
         e.preventDefault();
         try {
-            const res = await fetch(url, {
-                method: method
+            setLoading(true);
+            const fd = new FormData();
+            customHeaders.forEach((c) => {
+                if (c.tick)
+                    fd.append("_customHeaders", JSON.stringify(c))
+            })
+            formData.forEach((f) => {
+                if (f.tick)
+                    fd.append(`formdataValues_${f.name}`, f.type === "text" ? JSON.stringify(f.value) : f.file!)
+            })
+            fd.append("_url", url);
+            fd.append("_method", method);
+            fd.append("_bodyType", bodyType);
+            fd.append("_json", json);
+            fd.append("_authtype", authtype);
+            fd.append("_authValues", JSON.stringify(authValues));
+            const res = await fetch('/api/request', {
+                method: "POST",
+                body: fd
             });
-            console.log(res.headers.get("content-type"));
-            console.log(JSON.stringify(await res.json()));
+            const jsonData = await res.json() as CustomResponseType;
+            setRes(jsonData);
         }
         catch (err: any) {
             console.log(err)
+        }
+        finally {
+            setLoading(false);
         }
     }
 
@@ -148,14 +171,15 @@ const page = () => {
 
         setCustomHeaders(newHeaders)
     }
+
     return (
-        <div className="mt-10">
+        <div className="m-4">
             <form onSubmit={handle}>
                 <Field>
                     <ButtonGroup>
                         <Select value={method} onValueChange={(t) => setMethod(t as MethodType)} >
                             <SelectTrigger className={
-                                cn("w-full max-w-48", getColorMethod(method),
+                                cn(" max-w-48", getColorMethod(method),
                                     "font-bold text-base"
                                 )
                             }>
@@ -173,7 +197,9 @@ const page = () => {
                             </SelectContent>
                         </Select>
                         <Input value={url} onChange={(e) => setUrl(e.target.value.trim())} id="input-button-group" placeholder="Enter or paste the url" />
-                        <Button disabled={!url} variant="default">Search</Button>
+                        <Button disabled={!url || loading} variant="default">
+                            {loading && <Spinner data-icon="inline-start" />}
+                            Search</Button>
                     </ButtonGroup>
                 </Field>
             </form>
@@ -263,7 +289,7 @@ const page = () => {
                                 </Button>
                             </>
                             :
-                            <Textarea rows={5} value={json} onChange={(val) => setJson(val.target.value)} className="text-xl!" placeholder="Type your message here." />}
+                            <Textarea rows={20} value={json} onChange={(val) => setJson(val.target.value)} className="text-base!" placeholder="Type your message here." />}
                     </TabsContent>
                     <TabsContent value="_auth">
 
@@ -283,22 +309,40 @@ const page = () => {
                                 </SelectGroup>
                             </SelectContent>
                         </Select>
-                        {authtype === "bearerToken" &&
-                            <Textarea rows={5}
-                                value={authValues.token}
-                                onChange={(e) => setAuthValues((a) => ({ ...a, token: e.target.value }))}
-                                placeholder="Enter Token here" />
-                        }
-                        {authtype === "basic" &&
-                            <div className="flex gap-2">
-                                <MyInput id={'auth-username'} value={authValues.username} onChange={(e) => setAuthValues((prev) =>
-                                    ({ ...prev, username: e.target.value }))} label="Username" />
-                                <MyInput id={'auth-password'} value={authValues.password} onChange={(e) => setAuthValues((prev) =>
-                                    ({ ...prev, password: e.target.value }))} label="Password" />
-                            </div>
-                        }
+                        <div className="mt-8">
+                            {authtype === "bearerToken" &&
+                                <Textarea rows={5}
+                                    value={authValues.token}
+                                    onChange={(e) => setAuthValues((a) => ({ ...a, token: e.target.value }))}
+                                    placeholder="Enter Token here" />
+                            }
+                            {authtype === "basic" &&
+                                <div className="flex gap-2">
+                                    <MyInput id={'auth-username'} value={authValues.username} onChange={(e) => setAuthValues((prev) =>
+                                        ({ ...prev, username: e.target.value }))} label="Username" />
+                                    <MyInput id={'auth-password'} value={authValues.password} onChange={(e) => setAuthValues((prev) =>
+                                        ({ ...prev, password: e.target.value }))} label="Password" />
+                                </div>
+                            }
+                        </div>
                     </TabsContent>
-                    <TabsContent value="_response">Reponse here</TabsContent>
+                    <TabsContent value="_response">
+                        <div className="border border-gray-300/30  p-2 ">
+                            <div className="max-h-[70vh] h-[70vh] overflow-auto">
+                                {res?.Datatype === "json" &&
+                                    <ReactJson name="data" theme="brewer" src={res.data} />
+                                }
+                                {res?.Datatype === "text" &&
+                                    <p className="leading-7 ">
+                                        {res.data}
+                                    </p>
+                                }
+                                {!res && <p className="leading-7 ">
+                                    No Response Right Now
+                                </p>}
+                            </div>
+                        </div>
+                    </TabsContent>
                 </Tabs>
             </div>
         </div>);

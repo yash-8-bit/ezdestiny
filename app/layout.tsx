@@ -16,7 +16,7 @@ export default function RootLayout({
       lang="en"
       className={cn("h-full", "antialiased", "font-sans", figtree.variable)}
     >
-      <body  className="dark min-h-full">
+      <body  className="dark ">
         <TooltipProvider>
         {children}
         </TooltipProvider>
