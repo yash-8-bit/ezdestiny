@@ -1,6 +1,8 @@
 type MethodType = "GET" | "POST" | "DELETE" | "PUT" | "PATCH"
-type BodyType = "json" | "formData"
+type BodyType = "json" | "formData" | "none"
 type AuthType = "bearerToken" | "basic" | "none"
+type TabsType = "_headers" | "_auth" | "_body" | "_response"
+
 
 interface FormDataInputs {
     id: string;

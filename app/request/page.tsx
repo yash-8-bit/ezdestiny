@@ -57,11 +57,12 @@ const defaultAuthValues: AuthValues = {
 
 const page = () => {
     const [url, setUrl] = useState<string>("");
+    const [tabs, setTabs] = useState<TabsType>("_headers");
     const [res, setRes] = useState<CustomResponseType | null>(null);
-    const [bodyType, setBodyType] = useState<BodyType>("json");
+    const [bodyType, setBodyType] = useState<BodyType>("none");
     const [json, setJson] = useState<string>('');
     const [customHeaders, setCustomHeaders] = useState<CustomHeader[]>(defaultheaders);
-    const [formData, setformData] = useState<FormDataInputs[]>([defaultformdata]);
+    const [formData, setformData] = useState<FormDataInputs[]>([]);
     const [method, setMethod] = useState<MethodType>("GET");
     const [authtype, setAuthType] = useState<AuthType>("none")
     const [authValues, setAuthValues] = useState<AuthValues>(defaultAuthValues);
@@ -77,7 +78,7 @@ const page = () => {
             })
             formData.forEach((f) => {
                 if (f.tick)
-                    fd.append(`formdataValues_${f.name}`, f.type === "text" ? JSON.stringify(f.value) : f.file!)
+                    fd.append(`formdataValues<!-->${f.name}`, f.type === "text" ? JSON.stringify(f.value) : f.file!)
             })
             fd.append("_url", url);
             fd.append("_method", method);
@@ -91,6 +92,7 @@ const page = () => {
             });
             const jsonData = await res.json() as CustomResponseType;
             setRes(jsonData);
+            setTabs("_response");
         }
         catch (err: any) {
             console.log(err)
@@ -204,8 +206,8 @@ const page = () => {
                 </Field>
             </form>
             <div className="p-2">
-                <Tabs defaultValue="_headers" >
-                    <TabsList >
+                <Tabs value={tabs} onValueChange={(v) => setTabs(v as TabsType)} >
+                    <TabsList  >
                         <TabsTrigger value="_headers">Headers</TabsTrigger>
                         <TabsTrigger value="_auth">Auth</TabsTrigger>
 
@@ -250,6 +252,10 @@ const page = () => {
                     <TabsContent value="_body">
                         <RadioGroup value={bodyType} onValueChange={(value) => { setBodyType(value as BodyType) }} className="w-fit flex my-2">
                             <div className="flex items-center gap-3">
+                                <RadioGroupItem value="none" id="_radionone" />
+                                <Label htmlFor="_radionone">None</Label>
+                            </div>
+                            <div className="flex items-center gap-3">
                                 <RadioGroupItem value="json" id="_radiojson" />
                                 <Label htmlFor="_radiojson">Json</Label>
                             </div>
@@ -258,7 +264,7 @@ const page = () => {
                                 <Label htmlFor="_radioformdata">Form Data</Label>
                             </div>
                         </RadioGroup>
-                        {bodyType === "formData" ?
+                        {bodyType === "formData" &&
                             <>
                                 {formData.map((f) => (
                                     <div key={f.id} className="flex my-5 gap-2 items-center">
@@ -273,7 +279,7 @@ const page = () => {
                                         }
                                         <Tooltip>
                                             <TooltipTrigger asChild>
-                                                <Switch disabled={!f.tick} onCheckedChange={(flag) => handleChangeFileType(f.id, flag)} className="rounded-3xl" />
+                                                <Switch disabled={!f.tick} checked={f.type === "file" ? true : false} onCheckedChange={(flag) => handleChangeFileType(f.id, flag)} className="rounded-3xl" />
                                             </TooltipTrigger>
                                             <TooltipContent>
                                                 <p>Switch for {f.type === "file" ? "text" : "file"}</p>
@@ -288,8 +294,9 @@ const page = () => {
                                     <Plus /> Add More
                                 </Button>
                             </>
-                            :
-                            <Textarea rows={20} value={json} onChange={(val) => setJson(val.target.value)} className="text-base!" placeholder="Type your message here." />}
+
+                        }
+                        {bodyType === 'json' && <Textarea rows={20} value={json} onChange={(val) => setJson(val.target.value)} className="text-base!" placeholder="Type your message here." />}
                     </TabsContent>
                     <TabsContent value="_auth">
 
@@ -328,6 +335,12 @@ const page = () => {
                     </TabsContent>
                     <TabsContent value="_response">
                         <div className="border border-gray-300/30  p-2 ">
+                            {res && <div className="grid text-base grid-cols-2 m-2 text">
+                                <p>Time - {res.totalTime.toFixed(2)} s</p>
+                                <p>StatusCode - {res.statusCode}</p>
+
+
+                            </div>}
                             <div className="max-h-[70vh] h-[70vh] overflow-auto">
                                 {res?.Datatype === "json" &&
                                     <ReactJson name="data" theme="brewer" src={res.data} />
