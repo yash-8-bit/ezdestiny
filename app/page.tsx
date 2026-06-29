@@ -13,7 +13,7 @@ export default async function Home() {
       />
       <div className="absolute flex flex-col justify-center items-center size-full">
         <h1 className="text-7xl
-        text-gray-400 tracking-wider  font-extrabold  text-balance">Viji Flow</h1>
+        text-gray-400 tracking-wider  font-extrabold  text-balance">DESTINY</h1>
         <p>Api Tester Web App</p>
         <div className="mt-12">
           <Link href={"/request"}>

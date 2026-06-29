@@ -27,6 +27,8 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import dynamic from "next/dynamic";
+import { Toaster } from "@/components/ui/sonner";
+import { toast } from "sonner";
 const ReactJson = dynamic(() => import("react-json-view"))
 
 
@@ -43,7 +45,7 @@ const defaultheaders: CustomHeader[] = [
     {
         id: crypto.randomUUID(),
         key: "X-Powered-By",
-        value: "VijiFlow",
+        value: "Destiny",
         tick: true
     },
 ]
@@ -67,25 +69,28 @@ const page = () => {
     const [authtype, setAuthType] = useState<AuthType>("none")
     const [authValues, setAuthValues] = useState<AuthValues>(defaultAuthValues);
     const [loading, setLoading] = useState<boolean>(false);
-    async function handle(e: SubmitEvent<HTMLFormElement>) {
+    async function handleRequest(e: SubmitEvent<HTMLFormElement>) {
         e.preventDefault();
         try {
             setLoading(true);
             const fd = new FormData();
             customHeaders.forEach((c) => {
-                if (c.tick)
+                if (c.tick && c.key && c.value)
                     fd.append("_customHeaders", JSON.stringify(c))
             })
-            formData.forEach((f) => {
-                if (f.tick)
-                    fd.append(`formdataValues<!-->${f.name}`, f.type === "text" ? JSON.stringify(f.value) : f.file!)
-            })
+            if (bodyType === "formData" && method !== "GET")
+                formData.forEach((f) => {
+                    if (f.tick)
+                        fd.append(`formdataValues<!-->${f.name}`, f.type === "text" ? f.value : f.file!)
+                })
             fd.append("_url", url);
             fd.append("_method", method);
             fd.append("_bodyType", bodyType);
-            fd.append("_json", json);
+            if (bodyType === "json" && method !== "GET")
+                fd.append("_json", json);
             fd.append("_authtype", authtype);
-            fd.append("_authValues", JSON.stringify(authValues));
+            if (authtype != "none")
+                fd.append("_authValues", JSON.stringify(authValues));
             const res = await fetch('/api/request', {
                 method: "POST",
                 body: fd
@@ -147,39 +152,40 @@ const page = () => {
         })
         setformData(newformdata)
     }
-    const handleChangeTickType = (id: string, checked: boolean) => {
-        const newformdata = formData.map((f) => {
-            if (f.id === id) {
-                return {
-                    ...f,
-                    tick: checked
-                } as const
-            }
-            else return f
-        })
+    const handleChangeTickType = (id: string, checked: boolean, type: "formdata" | "header") => {
+        if (type === "formdata") {
+            const newformdata = formData.map((f) => {
+                if (f.id === id) {
+                    return {
+                        ...f,
+                        tick: checked
+                    } as const
+                }
+                else return f
+            })
+            setformData(newformdata)
+        }
+        else {
+            const newHeaders = customHeaders.map((f) => {
+                if (f.id === id) {
+                    return {
+                        ...f,
+                        tick: checked
+                    } as const
+                }
+                else return f
+            })
 
-        setformData(newformdata)
+            setCustomHeaders(newHeaders)
+        }
     }
-    const handleChangeTickTypeHeader = (id: string, checked: boolean) => {
-        const newHeaders = customHeaders.map((f) => {
-            if (f.id === id) {
-                return {
-                    ...f,
-                    tick: checked
-                } as const
-            }
-            else return f
-        })
-
-        setCustomHeaders(newHeaders)
-    }
-
     return (
         <div className="m-4">
-            <form onSubmit={handle}>
+            <Toaster position="top-center" />
+            <form onSubmit={handleRequest}>
                 <Field>
                     <ButtonGroup>
-                        <Select value={method} onValueChange={(t) => setMethod(t as MethodType)} >
+                        <Select value={method} onValueChange={(t) => { setMethod(t as MethodType); if (t === "GET") setBodyType("none") }} >
                             <SelectTrigger className={
                                 cn(" max-w-48", getColorMethod(method),
                                     "font-bold text-base"
@@ -198,7 +204,9 @@ const page = () => {
                                 </SelectGroup>
                             </SelectContent>
                         </Select>
-                        <Input value={url} onChange={(e) => setUrl(e.target.value.trim())} id="input-button-group" placeholder="Enter or paste the url" />
+                        <Input
+                            maxLength={100}
+                            type="url" value={url} onChange={(e) => setUrl(e.target.value.trim())} id="input-button-group" placeholder="Enter or paste the url" />
                         <Button disabled={!url || loading} variant="default">
                             {loading && <Spinner data-icon="inline-start" />}
                             Search</Button>
@@ -228,7 +236,7 @@ const page = () => {
                                     <TableRow key={ch.id}>
                                         <TableCell>
                                             <div className="flex items-center gap-3">
-                                                <Checkbox onCheckedChange={(c) => handleChangeTickTypeHeader(ch.id, c as boolean)} checked={ch.tick} />
+                                                <Checkbox onCheckedChange={(c) => handleChangeTickType(ch.id, c as boolean, "header")} checked={ch.tick} />
                                                 <X onClick={() => setCustomHeaders((prev) => prev.filter((p) => p.id !== ch.id))} size={20} />
                                             </div>
                                         </TableCell>
@@ -250,7 +258,13 @@ const page = () => {
                         </Button>
                     </TabsContent>
                     <TabsContent value="_body">
-                        <RadioGroup value={bodyType} onValueChange={(value) => { setBodyType(value as BodyType) }} className="w-fit flex my-2">
+                        <RadioGroup value={bodyType} onValueChange={(value) => {
+                            if (method === "GET") {
+                                toast.info("You Cannot Change BodyType in method GET")
+                                return
+                            }
+                            setBodyType(value as BodyType)
+                        }} className="w-fit flex my-2">
                             <div className="flex items-center gap-3">
                                 <RadioGroupItem value="none" id="_radionone" />
                                 <Label htmlFor="_radionone">None</Label>
@@ -268,7 +282,7 @@ const page = () => {
                             <>
                                 {formData.map((f) => (
                                     <div key={f.id} className="flex my-5 gap-2 items-center">
-                                        <Checkbox checked={f.tick} onCheckedChange={(val) => handleChangeTickType(f.id, val as any)} />
+                                        <Checkbox checked={f.tick} onCheckedChange={(val) => handleChangeTickType(f.id, val as any, "formdata")} />
                                         <MyInput disabled={!f.tick} id={`${f.id}-name-formdata`} value={f.name} onChange={(e) => handleChangeValue(f.id, e, "name")} label="Name" />
                                         {f.type === "text" ? <MyInput disabled={!f.tick} id={`${f.id}-value-formdata`} value={f.value} onChange={(e) => handleChangeValue(f.id, e, "value")} className="min-w-60" label="Value" type={"text"} />
                                             :
