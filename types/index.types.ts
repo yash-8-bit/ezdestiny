@@ -25,9 +25,12 @@ interface AuthValues {
 }
 interface CustomResponseType {
     data: any;
+    headersData?:{
+        [key : string]:string;
+    };
     type?: "data" | "information" | "error";
-    Datatype: "json" | "text";
+    Datatype?: "json" | "text";
     subtype?: string;
-    statusCode: number;
-    totalTime: number;
+    statusCode?: number;
+    totalTime?: number;
 }

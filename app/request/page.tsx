@@ -44,8 +44,8 @@ const defaultformdata: FormDataInputs = {
 const defaultheaders: CustomHeader[] = [
     {
         id: crypto.randomUUID(),
-        key: "X-Powered-By",
-        value: "Destiny",
+        key: "x-powered-by",
+        value: "destiny",
         tick: true
     },
 ]
@@ -76,7 +76,10 @@ const page = () => {
             const fd = new FormData();
             customHeaders.forEach((c) => {
                 if (c.tick && c.key && c.value)
-                    fd.append("_customHeaders", JSON.stringify(c))
+                    fd.append("_customHeaders", JSON.stringify({
+                        key: c.key,
+                        value: c.value
+                    }))
             })
             if (bodyType === "formData" && method !== "GET")
                 formData.forEach((f) => {
@@ -96,11 +99,18 @@ const page = () => {
                 body: fd
             });
             const jsonData = await res.json() as CustomResponseType;
-            setRes(jsonData);
-            setTabs("_response");
+            if (jsonData.type === "data") {
+                setRes(jsonData);
+                setTabs("_response");
+            }
+            else {
+                if (jsonData.type === "error") {
+                    toast.error(jsonData.data)
+                }
+            }
         }
         catch (err: any) {
-            console.log(err)
+            toast.error("Something Wrong in Our Platform")
         }
         finally {
             setLoading(false);
@@ -349,25 +359,61 @@ const page = () => {
                     </TabsContent>
                     <TabsContent value="_response">
                         <div className="border border-gray-300/30  p-2 ">
-                            {res && <div className="grid text-base grid-cols-2 m-2 text">
-                                <p>Time - {res.totalTime.toFixed(2)} s</p>
-                                <p>StatusCode - {res.statusCode}</p>
+                            <Tabs defaultValue="resData" >
+                                <TabsList variant={"line"}>
+                                    <TabsTrigger value="resData">Response</TabsTrigger>
+                                    <TabsTrigger value="resHeaders">Headers</TabsTrigger>
+                                </TabsList>
+                                <TabsContent value="resData">
+                                    {res && <div className="grid text-base grid-cols-2 m-2 text">
+                                        <p>Time - {res?.totalTime?.toFixed(3)} s</p>
+                                        <p>StatusCode - {res.statusCode}</p>
+                                    </div>}
+                                    <div className="max-h-[70vh] h-[70vh] overflow-auto">
+                                        {res?.Datatype === "json" &&
+                                            <ReactJson name="data" theme="brewer" src={res.data} />
+                                        }
+                                        {res?.Datatype === "text" &&
+                                            <p className="whitespace-normal">
+                                                {res.data}
+                                            </p>
+                                        }
+                                        {!res && <p >
+                                            No Response Right Now
+                                        </p>}
+                                    </div>
+                                </TabsContent>
+                                <TabsContent value="resHeaders">
+                                    <div className="max-h-[70vh] h-[70vh] overflow-auto">
+                                        {res?.headersData && <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Key</TableHead>
+                                                    <TableHead>Value</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {Object.keys(res.headersData).map((key, idx) => (
+                                                    <TableRow key={idx} >
+                                                        <TableCell>
+                                                            {key}
+                                                        </TableCell>
+                                                        <TableCell className="whitespace-normal">
+                                                            {res.headersData && res.headersData[key]}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+
+                                            </TableBody>
+                                        </Table>}
+                                        {!res?.headersData &&
+                                            <p>No Headers Right Now</p>
+                                        }
+                                    </div>
+                                </TabsContent>
+                            </Tabs>
 
 
-                            </div>}
-                            <div className="max-h-[70vh] h-[70vh] overflow-auto">
-                                {res?.Datatype === "json" &&
-                                    <ReactJson name="data" theme="brewer" src={res.data} />
-                                }
-                                {res?.Datatype === "text" &&
-                                    <p className="leading-7 ">
-                                        {res.data}
-                                    </p>
-                                }
-                                {!res && <p className="leading-7 ">
-                                    No Response Right Now
-                                </p>}
-                            </div>
                         </div>
                     </TabsContent>
                 </Tabs>

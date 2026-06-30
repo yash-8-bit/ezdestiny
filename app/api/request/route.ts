@@ -72,13 +72,23 @@ export async function POST(req: NextRequest) {
             let time2 = performance.now();
             let data: string = "";
             let totalTime = (time2 - time1) / 1000;
+            let HeaderObject = new Object();
+            _res.headers.forEach((value, key) => {
+                HeaderObject = {
+                    ...HeaderObject,
+                    [key]: value
+                }
+            })
             const ContentType = _res.headers.get("Content-type");
             if (ContentType?.includes("text")) {
                 data = await _res.text();
                 return Response.json({
                     "data": data,
+                    "type": "data",
+                    headersData: HeaderObject,
                     statusCode: _res.status,
-                    "Datatype": "text", totalTime
+                    "Datatype": "text",
+                    totalTime
                 }, {
                     status: 200
                 })
@@ -87,6 +97,8 @@ export async function POST(req: NextRequest) {
                 data = await _res.json();
                 return Response.json({
                     "data": data,
+                    "type": "data",
+                    headersData: HeaderObject,
                     statusCode: _res.status,
                     "Datatype": "json", totalTime
                 }, {
@@ -96,22 +108,30 @@ export async function POST(req: NextRequest) {
             return Response.json({
                 "data": "No Response or This Platform Cannot handle",
                 statusCode: _res.status,
+                "type": "data",
                 "Datatype": "text",
                 totalTime
             }, {
                 status: 200
             })
         }
-        else{
+        else {
             console.log(safeParsed.error)
+            return Response.json({
+                "data": safeParsed.error.issues[0].message,
+                "type": "error",
+            }, {
+                status: 400
+            })
         }
     }
-    catch (err) {
+    catch (err: any) {
+        console.log(err)
         return Response.json({
             "data": "Something Wrong in Our Platform",
-            statusCode: 500,
-            "Datatype": "text",
-            totalTime: 0
+            "type": "error",
+        }, {
+            status: 500
         })
     }
 }

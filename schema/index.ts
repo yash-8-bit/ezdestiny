@@ -1,10 +1,20 @@
 import z from "zod";
 
-export const AuthValuesSchema = z.object({
+export const AuthValuesSchema = z.preprocess((f) => {
+    if (typeof (f) === "string") {
+        try {
+            return JSON.parse(f);
+        }
+        catch (err) {
+            return f;
+        }
+    }
+    return f;
+}, z.object({
     username: z.string().trim(),
     password: z.string().trim(),
     token: z.string().trim(),
-}).nullish()
+}).nullish())
 export const HeadersSchema = z.array(z.preprocess((f) => {
     if (typeof (f) === "string") {
         try {
@@ -16,8 +26,8 @@ export const HeadersSchema = z.array(z.preprocess((f) => {
     }
     return f;
 }, z.object({
-    key: z.string().trim().min(1, "Minimum 1 length required"),
-    value: z.string().trim().min(1, "Minimum 1 length required"),
+    key: z.string().trim().min(1, "Minimum header key length 1 required"),
+    value: z.string().trim().min(1, "Minimum header value length 1 required"),
 })))
 export const FormDataSchema = z.object({
     name: z.string().trim().min(1, "Minimum 1 length required"),
