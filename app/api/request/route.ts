@@ -116,7 +116,6 @@ export async function POST(req: NextRequest) {
             })
         }
         else {
-            console.log(safeParsed.error)
             return Response.json({
                 "data": safeParsed.error.issues[0].message,
                 "type": "error",
@@ -126,7 +125,6 @@ export async function POST(req: NextRequest) {
         }
     }
     catch (err: any) {
-        console.log(err)
         return Response.json({
             "data": "Something Wrong in Our Platform",
             "type": "error",

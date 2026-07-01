@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { Plus, X } from "lucide-react";
 import { ChangeEvent, SubmitEvent, useState } from "react";
@@ -190,235 +190,242 @@ const page = () => {
         }
     }
     return (
-        <div className="m-4">
-            <Toaster position="top-center" />
-            <form onSubmit={handleRequest}>
-                <Field>
-                    <ButtonGroup>
-                        <Select value={method} onValueChange={(t) => { setMethod(t as MethodType); if (t === "GET") setBodyType("none") }} >
-                            <SelectTrigger className={
-                                cn(" max-w-48", getColorMethod(method),
-                                    "font-bold text-base"
-                                )
-                            }>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectGroup>
-                                    <SelectLabel>Methods</SelectLabel>
-                                    <SelectItem value="GET">GET</SelectItem>
-                                    <SelectItem value="POST">POST</SelectItem>
-                                    <SelectItem value="PATCH">PATCH</SelectItem>
-                                    <SelectItem value="PUT">PUT</SelectItem>
-                                    <SelectItem value="DELETE">DELETE</SelectItem>
-                                </SelectGroup>
-                            </SelectContent>
-                        </Select>
-                        <Input
-                            maxLength={100}
-                            type="url" value={url} onChange={(e) => setUrl(e.target.value.trim())} id="input-button-group" placeholder="Enter or paste the url" />
-                        <Button disabled={!url || loading} variant="default">
-                            {loading && <Spinner data-icon="inline-start" />}
-                            Search</Button>
-                    </ButtonGroup>
-                </Field>
-            </form>
-            <div className="p-2">
-                <Tabs value={tabs} onValueChange={(v) => setTabs(v as TabsType)} >
-                    <TabsList  >
-                        <TabsTrigger value="_headers">Headers</TabsTrigger>
-                        <TabsTrigger value="_auth">Auth</TabsTrigger>
+        <TooltipProvider>
+            <div className="m-4">
+                <Toaster position="top-center" />
+                <form onSubmit={handleRequest}>
+                    <Field>
+                        <ButtonGroup>
+                            <Select value={method} onValueChange={(t) => { setMethod(t as MethodType); if (t === "GET") setBodyType("none") }} >
+                                <SelectTrigger className={
+                                    cn(" max-w-48", getColorMethod(method),
+                                        "font-bold text-base"
+                                    )
+                                }>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup>
+                                        <SelectLabel>Methods</SelectLabel>
+                                        <SelectItem value="GET">GET</SelectItem>
+                                        <SelectItem value="POST">POST</SelectItem>
+                                        <SelectItem value="PATCH">PATCH</SelectItem>
+                                        <SelectItem value="PUT">PUT</SelectItem>
+                                        <SelectItem value="DELETE">DELETE</SelectItem>
+                                    </SelectGroup>
+                                </SelectContent>
+                            </Select>
+                            <Input
+                                maxLength={100}
+                                type="url" value={url} onChange={(e) => setUrl(e.target.value.trim())} id="input-button-group" placeholder="Enter or paste the url" />
+                            <Button disabled={!url || loading} variant="default">
+                                {loading && <Spinner data-icon="inline-start" />}
+                                Search</Button>
+                        </ButtonGroup>
+                    </Field>
+                </form>
+                <div className="p-2">
+                    <Tabs value={tabs} onValueChange={(v) => setTabs(v as TabsType)} >
+                        <TabsList  >
+                            <TabsTrigger value="_headers">Headers</TabsTrigger>
+                            <TabsTrigger value="_auth">Auth</TabsTrigger>
 
-                        <TabsTrigger value="_body">Body</TabsTrigger>
-                        <TabsTrigger value="_response">Response</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="_headers">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead></TableHead>
-                                    <TableHead>Key</TableHead>
-                                    <TableHead>Value</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {customHeaders.map((ch) => (
-                                    <TableRow key={ch.id}>
-                                        <TableCell>
-                                            <div className="flex items-center gap-3">
-                                                <Checkbox onCheckedChange={(c) => handleChangeTickType(ch.id, c as boolean, "header")} checked={ch.tick} />
-                                                <X onClick={() => setCustomHeaders((prev) => prev.filter((p) => p.id !== ch.id))} size={20} />
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Input value={ch.key} onChange={(e) => { handleChangeHeader(ch.id, e, "key") }} placeholder="Enter Key" />
-                                        </TableCell>
-                                        <TableCell>
-                                            <Input value={ch.value} onChange={(e) => { handleChangeHeader(ch.id, e, "value") }} placeholder="Enter Value" />
-                                        </TableCell>
+                            <TabsTrigger value="_body">Body</TabsTrigger>
+                            <TabsTrigger value="_response">Response</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="_headers">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead></TableHead>
+                                        <TableHead>Key</TableHead>
+                                        <TableHead>Value</TableHead>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                        <Button onClick={() => setCustomHeaders((f) => [...f, {
-                            key: "", value: "", tick: true,
-                            id: crypto.randomUUID()
-                        }])} className="mt-4" variant="outline" size="sm">
-                            <Plus /> Add More
-                        </Button>
-                    </TabsContent>
-                    <TabsContent value="_body">
-                        <RadioGroup value={bodyType} onValueChange={(value) => {
-                            if (method === "GET") {
-                                toast.info("You Cannot Change BodyType in method GET")
-                                return
-                            }
-                            setBodyType(value as BodyType)
-                        }} className="w-fit flex my-2">
-                            <div className="flex items-center gap-3">
-                                <RadioGroupItem value="none" id="_radionone" />
-                                <Label htmlFor="_radionone">None</Label>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <RadioGroupItem value="json" id="_radiojson" />
-                                <Label htmlFor="_radiojson">Json</Label>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <RadioGroupItem value="formData" id="_radioformdata" />
-                                <Label htmlFor="_radioformdata">Form Data</Label>
-                            </div>
-                        </RadioGroup>
-                        {bodyType === "formData" &&
-                            <>
-                                {formData.map((f) => (
-                                    <div key={f.id} className="flex my-5 gap-2 items-center">
-                                        <Checkbox checked={f.tick} onCheckedChange={(val) => handleChangeTickType(f.id, val as any, "formdata")} />
-                                        <MyInput disabled={!f.tick} id={`${f.id}-name-formdata`} value={f.name} onChange={(e) => handleChangeValue(f.id, e, "name")} label="Name" />
-                                        {f.type === "text" ? <MyInput disabled={!f.tick} id={`${f.id}-value-formdata`} value={f.value} onChange={(e) => handleChangeValue(f.id, e, "value")} className="min-w-60" label="Value" type={"text"} />
-                                            :
-                                            <>
-                                                <label htmlFor={`${f.id}-value-formdata`} className="border-b-gray-400 border pb-1">{f.value}</label>
-                                                <MyInput disabled={!f.tick} className={`min-w-60 ${f.value ? "hidden" : ""}`} id={`${f.id}-value-formdata`} onError={() => { }} onChange={(e) => handleChangeValue(f.id, e, "value")} label="Value" type={"file"} />
-                                            </>
-                                        }
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <Switch disabled={!f.tick} checked={f.type === "file" ? true : false} onCheckedChange={(flag) => handleChangeFileType(f.id, flag)} className="rounded-3xl" />
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                                <p>Switch for {f.type === "file" ? "text" : "file"}</p>
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    </div>
-                                ))}
-                                <Button onClick={() => setformData((f) => [...f, {
-                                    ...defaultformdata,
-                                    id: crypto.randomUUID()
-                                }])} className="mt-4" variant="outline" size="sm">
-                                    <Plus /> Add More
-                                </Button>
-                            </>
-
-                        }
-                        {bodyType === 'json' && <Textarea rows={20} value={json} onChange={(val) => setJson(val.target.value)} className="text-base!" placeholder="Type your message here." />}
-                    </TabsContent>
-                    <TabsContent value="_auth">
-
-                        <Select value={authtype} onValueChange={(t) => setAuthType(t as AuthType)} >
-                            <SelectTrigger className={
-                                cn("w-full max-w-48",
-                                )
-                            }>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent >
-                                <SelectGroup>
-                                    <SelectLabel>Auth Types</SelectLabel>
-                                    <SelectItem value="none">None</SelectItem>
-                                    <SelectItem value="bearerToken">Bearer Token</SelectItem>
-                                    <SelectItem value="basic">Basic Auth</SelectItem>
-                                </SelectGroup>
-                            </SelectContent>
-                        </Select>
-                        <div className="mt-8">
-                            {authtype === "bearerToken" &&
-                                <Textarea rows={5}
-                                    value={authValues.token}
-                                    onChange={(e) => setAuthValues((a) => ({ ...a, token: e.target.value }))}
-                                    placeholder="Enter Token here" />
-                            }
-                            {authtype === "basic" &&
-                                <div className="flex gap-2">
-                                    <MyInput id={'auth-username'} value={authValues.username} onChange={(e) => setAuthValues((prev) =>
-                                        ({ ...prev, username: e.target.value }))} label="Username" />
-                                    <MyInput id={'auth-password'} value={authValues.password} onChange={(e) => setAuthValues((prev) =>
-                                        ({ ...prev, password: e.target.value }))} label="Password" />
+                                </TableHeader>
+                                <TableBody>
+                                    {customHeaders.map((ch) => (
+                                        <TableRow key={ch.id}>
+                                            <TableCell>
+                                                <div className="flex items-center gap-3">
+                                                    <Checkbox onCheckedChange={(c) => handleChangeTickType(ch.id, c as boolean, "header")} checked={ch.tick} />
+                                                    <X onClick={() => setCustomHeaders((prev) => prev.filter((p) => p.id !== ch.id))} size={20} />
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Input value={ch.key} onChange={(e) => { handleChangeHeader(ch.id, e, "key") }} placeholder="Enter Key" />
+                                            </TableCell>
+                                            <TableCell>
+                                                <Input value={ch.value} onChange={(e) => { handleChangeHeader(ch.id, e, "value") }} placeholder="Enter Value" />
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                            <Button onClick={() => setCustomHeaders((f) => [...f, {
+                                key: "", value: "", tick: true,
+                                id: crypto.randomUUID()
+                            }])} className="mt-4" variant="outline" size="sm">
+                                <Plus /> Add More
+                            </Button>
+                        </TabsContent>
+                        <TabsContent value="_body">
+                            <RadioGroup value={bodyType} onValueChange={(value) => {
+                                if (method === "GET") {
+                                    toast.info("You Cannot Change BodyType in method GET")
+                                    return
+                                }
+                                setBodyType(value as BodyType)
+                            }} className="w-fit flex my-2">
+                                <div className="flex items-center gap-3">
+                                    <RadioGroupItem value="none" id="_radionone" />
+                                    <Label htmlFor="_radionone">None</Label>
                                 </div>
+                                <div className="flex items-center gap-3">
+                                    <RadioGroupItem value="json" id="_radiojson" />
+                                    <Label htmlFor="_radiojson">Json</Label>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <RadioGroupItem value="formData" id="_radioformdata" />
+                                    <Label htmlFor="_radioformdata">Form Data</Label>
+                                </div>
+                            </RadioGroup>
+                            {bodyType === "formData" &&
+                                <>
+                                    {formData.map((f) => (
+                                        <div key={f.id} className="flex my-5 gap-2 items-center">
+                                            <div className="flex items-center gap-3">
+                                                <Checkbox checked={f.tick} onCheckedChange={(val) => handleChangeTickType(f.id, val as any, "formdata")} />
+                                                <X onClick={() => setformData((prev) => prev.filter((p) => p.id !== f.id))} size={20} />
+                                            </div>
+
+                                           
+                                            <MyInput disabled={!f.tick} id={`${f.id}-name-formdata`} value={f.name} onChange={(e) => handleChangeValue(f.id, e, "name")} label="Name" />
+                                            {f.type === "text" ? <MyInput disabled={!f.tick} id={`${f.id}-value-formdata`} value={f.value} onChange={(e) => handleChangeValue(f.id, e, "value")} className="min-w-60" label="Value" type={"text"} />
+                                                :
+                                                <>
+                                                    <label htmlFor={`${f.id}-value-formdata`} className="border-b-gray-400 border pb-1">{f.value}</label>
+                                                    <MyInput disabled={!f.tick} className={`min-w-60 ${f.value ? "hidden" : ""}`} id={`${f.id}-value-formdata`} onError={() => { }} onChange={(e) => handleChangeValue(f.id, e, "value")} label="Value" type={"file"} />
+                                                </>
+                                            }
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Switch disabled={!f.tick} checked={f.type === "file" ? true : false} onCheckedChange={(flag) => handleChangeFileType(f.id, flag)} className="rounded-3xl" />
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>Switch for {f.type === "file" ? "text" : "file"}</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </div>
+                                    ))}
+                                    <Button onClick={() => setformData((f) => [...f, {
+                                        ...defaultformdata,
+                                        id: crypto.randomUUID()
+                                    }])} className="mt-4" variant="outline" size="sm">
+                                        <Plus /> {formData.length === 0 ? "Add" : "Add More"}
+                                    </Button>
+                                </>
+
                             }
-                        </div>
-                    </TabsContent>
-                    <TabsContent value="_response">
-                        <div className="border border-gray-300/30  p-2 ">
-                            <Tabs defaultValue="resData" >
-                                <TabsList variant={"line"}>
-                                    <TabsTrigger value="resData">Response</TabsTrigger>
-                                    <TabsTrigger value="resHeaders">Headers</TabsTrigger>
-                                </TabsList>
-                                <TabsContent value="resData">
-                                    {res && <div className="grid text-base grid-cols-2 m-2 text">
-                                        <p>Time - {res?.totalTime?.toFixed(3)} s</p>
-                                        <p>StatusCode - {res.statusCode}</p>
-                                    </div>}
-                                    <div className="max-h-[70vh] h-[70vh] overflow-auto">
-                                        {res?.Datatype === "json" &&
-                                            <ReactJson name="data" theme="brewer" src={res.data} />
-                                        }
-                                        {res?.Datatype === "text" &&
-                                            <p className="whitespace-normal">
-                                                {res.data}
-                                            </p>
-                                        }
-                                        {!res && <p >
-                                            No Response Right Now
-                                        </p>}
+                            {bodyType === 'json' && <Textarea rows={20} value={json} onChange={(val) => setJson(val.target.value)} className="text-base!" placeholder="Type your message here." />}
+                        </TabsContent>
+                        <TabsContent value="_auth">
+
+                            <Select value={authtype} onValueChange={(t) => setAuthType(t as AuthType)} >
+                                <SelectTrigger className={
+                                    cn("w-full max-w-48",
+                                    )
+                                }>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent >
+                                    <SelectGroup>
+                                        <SelectLabel>Auth Types</SelectLabel>
+                                        <SelectItem value="none">None</SelectItem>
+                                        <SelectItem value="bearerToken">Bearer Token</SelectItem>
+                                        <SelectItem value="basic">Basic Auth</SelectItem>
+                                    </SelectGroup>
+                                </SelectContent>
+                            </Select>
+                            <div className="mt-8">
+                                {authtype === "bearerToken" &&
+                                    <Textarea rows={5}
+                                        value={authValues.token}
+                                        onChange={(e) => setAuthValues((a) => ({ ...a, token: e.target.value }))}
+                                        placeholder="Enter Token here" />
+                                }
+                                {authtype === "basic" &&
+                                    <div className="flex gap-2">
+                                        <MyInput id={'auth-username'} value={authValues.username} onChange={(e) => setAuthValues((prev) =>
+                                            ({ ...prev, username: e.target.value }))} label="Username" />
+                                        <MyInput id={'auth-password'} value={authValues.password} onChange={(e) => setAuthValues((prev) =>
+                                            ({ ...prev, password: e.target.value }))} label="Password" />
                                     </div>
-                                </TabsContent>
-                                <TabsContent value="resHeaders">
-                                    <div className="max-h-[70vh] h-[70vh] overflow-auto">
-                                        {res?.headersData && <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>Key</TableHead>
-                                                    <TableHead>Value</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {Object.keys(res.headersData).map((key, idx) => (
-                                                    <TableRow key={idx} >
-                                                        <TableCell>
-                                                            {key}
-                                                        </TableCell>
-                                                        <TableCell className="whitespace-normal">
-                                                            {res.headersData && res.headersData[key]}
-                                                        </TableCell>
+                                }
+                            </div>
+                        </TabsContent>
+                        <TabsContent value="_response">
+                            <div className="border border-gray-300/30  p-2 ">
+                                <Tabs defaultValue="resData" >
+                                    <TabsList variant={"line"}>
+                                        <TabsTrigger value="resData">Response</TabsTrigger>
+                                        <TabsTrigger value="resHeaders">Headers</TabsTrigger>
+                                    </TabsList>
+                                    <TabsContent value="resData">
+                                        {res && <div className="grid text-base grid-cols-2 m-2 text">
+                                            <p>Time - {res?.totalTime?.toFixed(3)} s</p>
+                                            <p>StatusCode - {res.statusCode}</p>
+                                        </div>}
+                                        <div className="max-h-[70vh] h-[70vh] overflow-auto">
+                                            {res?.Datatype === "json" &&
+                                                <ReactJson name="data" theme="brewer" src={res.data} />
+                                            }
+                                            {res?.Datatype === "text" &&
+                                                <p className="whitespace-normal">
+                                                    {res.data}
+                                                </p>
+                                            }
+                                            {!res && <p >
+                                                No Response Right Now
+                                            </p>}
+                                        </div>
+                                    </TabsContent>
+                                    <TabsContent value="resHeaders">
+                                        <div className="max-h-[70vh] h-[70vh] overflow-auto">
+                                            {res?.headersData && <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead>Key</TableHead>
+                                                        <TableHead>Value</TableHead>
                                                     </TableRow>
-                                                ))}
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {Object.keys(res.headersData).map((key, idx) => (
+                                                        <TableRow key={idx} >
+                                                            <TableCell>
+                                                                {key}
+                                                            </TableCell>
+                                                            <TableCell className="whitespace-normal">
+                                                                {res.headersData && res.headersData[key]}
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))}
 
-                                            </TableBody>
-                                        </Table>}
-                                        {!res?.headersData &&
-                                            <p>No Headers Right Now</p>
-                                        }
-                                    </div>
-                                </TabsContent>
-                            </Tabs>
+                                                </TableBody>
+                                            </Table>}
+                                            {!res?.headersData &&
+                                                <p>No Headers Right Now</p>
+                                            }
+                                        </div>
+                                    </TabsContent>
+                                </Tabs>
 
 
-                        </div>
-                    </TabsContent>
-                </Tabs>
+                            </div>
+                        </TabsContent>
+                    </Tabs>
+                </div>
             </div>
-        </div>);
+        </TooltipProvider>);
 }
 
 
