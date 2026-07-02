@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button";
+import { Metadata } from "next";
 import Link from "next/link";
 
 export default async function Home() {
-
   return (
     <div className="min-h-screen w-full relative bg-black">
       <div
@@ -26,4 +26,9 @@ export default async function Home() {
       </div>
     </div>
   );
+}
+
+export const metadata: Metadata = {
+  title: 'EzDestiny API Testing Platform',
+  description: 'Test and debug your APIs with EZDestiny—an easy API tester tool built for fast request sending and clear responses.'
 }
