@@ -45,7 +45,7 @@ const defaultheaders: CustomHeader[] = [
     {
         id: crypto.randomUUID(),
         key: "x-powered-by",
-        value: "destiny",
+        value: "EzDestiny",
         tick: true
     },
 ]

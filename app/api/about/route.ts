@@ -1,7 +1,7 @@
 
 export async function GET() {
     const data = {
-        "productName": "destiny",
+        "productName": "EzDestiny",
         "version": "1.0.0",
         "status": "Working",
         "madeby": {
