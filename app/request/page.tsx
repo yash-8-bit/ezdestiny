@@ -29,6 +29,7 @@ import {
 import dynamic from "next/dynamic";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
+import MykeyValurPair from "@/components/_ui/MykeyValurPair";
 const ReactJson = dynamic(() => import("react-json-view"))
 
 
@@ -41,7 +42,7 @@ const defaultformdata: FormDataInputs = {
     file: null
 }
 
-const defaultheaders: CustomHeader[] = [
+const defaultheaders: KeyValuePair[] = [
     {
         id: crypto.randomUUID(),
         key: "x-powered-by",
@@ -49,6 +50,9 @@ const defaultheaders: CustomHeader[] = [
         tick: true
     },
 ]
+
+const defaultParams: KeyValuePair[] = []
+
 
 const defaultAuthValues: AuthValues = {
     username: "",
@@ -63,7 +67,9 @@ const page = () => {
     const [res, setRes] = useState<CustomResponseType | null>(null);
     const [bodyType, setBodyType] = useState<BodyType>("none");
     const [json, setJson] = useState<string>('');
-    const [customHeaders, setCustomHeaders] = useState<CustomHeader[]>(defaultheaders);
+    const [customHeaders, setCustomHeaders] = useState<KeyValuePair[]>(defaultheaders);
+    const [customParams, setCustomParams] = useState<KeyValuePair[]>(defaultParams);
+
     const [formData, setformData] = useState<FormDataInputs[]>([]);
     const [method, setMethod] = useState<MethodType>("GET");
     const [authtype, setAuthType] = useState<AuthType>("none")
@@ -77,6 +83,13 @@ const page = () => {
             customHeaders.forEach((c) => {
                 if (c.tick && c.key && c.value)
                     fd.append("_customHeaders", JSON.stringify({
+                        key: c.key,
+                        value: c.value
+                    }))
+            })
+            customParams.forEach((c) => {
+                if (c.tick && c.key && c.value)
+                    fd.append("_customParams", JSON.stringify({
                         key: c.key,
                         value: c.value
                     }))
@@ -117,17 +130,65 @@ const page = () => {
         }
     }
 
-    const handleChangeHeader = (id: string, e: ChangeEvent<HTMLInputElement, HTMLInputElement>, name: string) => {
-        const newHeaders = customHeaders.map((f) => {
-            if (f.id === id) {
-                return {
-                    ...f,
-                    [name]: e.target.value
-                } as const
-            }
-            else return f
-        })
-        setCustomHeaders(newHeaders)
+    const handleChangeKeyValuePair = (id: string, e: ChangeEvent<HTMLInputElement, HTMLInputElement>, name: string, type: "header" | "params") => {
+        if (type === "header") {
+            const newHeaders = customHeaders.map((f) => {
+                if (f.id === id) {
+                    return {
+                        ...f,
+                        [name]: e.target.value
+                    } as const
+                }
+                else return f
+            })
+            setCustomHeaders(newHeaders)
+        }
+        else {
+            const newParams = customParams.map((f) => {
+                if (f.id === id) {
+                    setUrl(url + url.includes("?") ? `&${f.key}=${f.value}` : `?${f.key}=${f.value}`);
+                    return {
+                        ...f,
+                        [name]: e.target.value
+                    } as const
+
+                }
+                else return f
+            })
+            var newUrl = url.split("?")?.[0];
+            newParams.forEach((p) => {
+                newUrl += newUrl.includes("?") ? `&${p.key}=${p.value}` : `?${p.key}=${p.value}`
+            });
+            setUrl(newUrl);
+            setCustomParams(newParams);
+
+        }
+    }
+
+    const handleChangeUrl = (e: ChangeEvent<HTMLInputElement, HTMLInputElement>) => {
+        const newValue = e.target.value.trim();
+        const str2 = newValue.split("?")?.[1];
+
+        if (newValue.includes("?") && str2 != "") {
+            const params = newValue.split("?")?.[1].split("&");
+
+            const newParam = params.map((p) => {
+                const [key, value] = p.split("=");
+                if (key || value)
+                    return ({
+                        id: crypto.randomUUID(),
+                        key: key || "",
+                        value: value || "",
+                        tick: true
+                    })
+            }).filter((c) => !!c);
+            setCustomParams(newParam);
+
+        }
+        if (str2 === "") setCustomParams([])
+        setUrl(newValue);
+
+
     }
     const handleChangeValue = (id: string, e: ChangeEvent<HTMLInputElement, HTMLInputElement>, name: string) => {
 
@@ -148,6 +209,17 @@ const page = () => {
         })
         setformData(newformdata)
     }
+
+    const handleDeleteParam = (id: string) => {
+        const newParams = customParams.filter((p) => p.id !== id);
+        var newUrl = url.split("?")?.[0];
+        newParams.forEach((p) => {
+            if (p.tick)
+                newUrl += newUrl.includes("?") ? `&${p.key}=${p.value}` : `?${p.key}=${p.value}`
+        });
+        setUrl(newUrl);
+        setCustomParams(newParams)
+    }
     const handleChangeFileType = (id: string, checked: boolean) => {
         const newformdata = formData.map((f) => {
             if (f.id === id) {
@@ -162,7 +234,7 @@ const page = () => {
         })
         setformData(newformdata)
     }
-    const handleChangeTickType = (id: string, checked: boolean, type: "formdata" | "header") => {
+    const handleChangeTickType = (id: string, checked: boolean, type: "formdata" | "header" | "params") => {
         if (type === "formdata") {
             const newformdata = formData.map((f) => {
                 if (f.id === id) {
@@ -175,7 +247,7 @@ const page = () => {
             })
             setformData(newformdata)
         }
-        else {
+        else if (type === "header") {
             const newHeaders = customHeaders.map((f) => {
                 if (f.id === id) {
                     return {
@@ -187,6 +259,24 @@ const page = () => {
             })
 
             setCustomHeaders(newHeaders)
+        }
+        else {
+            const newParams = customParams.map((f) => {
+                if (f.id === id) {
+                    return {
+                        ...f,
+                        tick: checked
+                    } as const
+                }
+                else return f
+            })
+            var newUrl = url.split("?")?.[0];
+            newParams.forEach((p) => {
+                if (p.tick)
+                    newUrl += newUrl.includes("?") ? `&${p.key}=${p.value}` : `?${p.key}=${p.value}`
+            });
+            setUrl(newUrl);
+            setCustomParams(newParams)
         }
     }
     return (
@@ -217,7 +307,7 @@ const page = () => {
                             </Select>
                             <Input
                                 maxLength={100}
-                                type="url" value={url} onChange={(e) => setUrl(e.target.value.trim())} id="input-button-group" placeholder="Enter or paste the url" />
+                                type="url" value={url} onChange={handleChangeUrl} id="input-button-group" placeholder="Enter or paste the url" />
                             <Button disabled={!url || loading} variant="default">
                                 {loading && <Spinner data-icon="inline-start" />}
                                 Search</Button>
@@ -228,46 +318,28 @@ const page = () => {
                     <Tabs value={tabs} onValueChange={(v) => setTabs(v as TabsType)} >
                         <TabsList  >
                             <TabsTrigger value="_headers">Headers</TabsTrigger>
+                            <TabsTrigger value="_params">Params</TabsTrigger>
+
                             <TabsTrigger value="_auth">Auth</TabsTrigger>
 
                             <TabsTrigger value="_body">Body</TabsTrigger>
                             <TabsTrigger value="_response">Response</TabsTrigger>
                         </TabsList>
-                        <TabsContent value="_headers">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead></TableHead>
-                                        <TableHead>Key</TableHead>
-                                        <TableHead>Value</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {customHeaders.map((ch) => (
-                                        <TableRow key={ch.id}>
-                                            <TableCell>
-                                                <div className="flex items-center gap-3">
-                                                    <Checkbox onCheckedChange={(c) => handleChangeTickType(ch.id, c as boolean, "header")} checked={ch.tick} />
-                                                    <X onClick={() => setCustomHeaders((prev) => prev.filter((p) => p.id !== ch.id))} size={20} />
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Input value={ch.key} onChange={(e) => { handleChangeHeader(ch.id, e, "key") }} placeholder="Enter Key" />
-                                            </TableCell>
-                                            <TableCell>
-                                                <Input value={ch.value} onChange={(e) => { handleChangeHeader(ch.id, e, "value") }} placeholder="Enter Value" />
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                            <Button onClick={() => setCustomHeaders((f) => [...f, {
-                                key: "", value: "", tick: true,
-                                id: crypto.randomUUID()
-                            }])} className="mt-4" variant="outline" size="sm">
-                                <Plus /> Add More
-                            </Button>
-                        </TabsContent>
+                        <MykeyValurPair value="_headers"
+                            keyValuePair={customHeaders}
+                            onDelete={(id) => setCustomHeaders((prev) => prev.filter((p) => p.id !== id))}
+                            setkeyValuePair={setCustomHeaders}
+                            onCheckBoxChange={({ checkStatus, id }) => { handleChangeTickType(id, checkStatus, "header") }}
+                            onChange={({ e, id, name }) => { handleChangeKeyValuePair(id, e, name, "header") }}
+                        />
+                        <MykeyValurPair value="_params"
+                            keyValuePair={customParams}
+                            onDelete={handleDeleteParam}
+                            setkeyValuePair={setCustomParams}
+                            onCheckBoxChange={({ checkStatus, id }) => { handleChangeTickType(id, checkStatus, "params") }}
+                            onChange={({ e, id, name }) => { handleChangeKeyValuePair(id, e, name, "params") }}
+                        />
+
                         <TabsContent value="_body">
                             <RadioGroup value={bodyType} onValueChange={(value) => {
                                 if (method === "GET") {
@@ -298,7 +370,7 @@ const page = () => {
                                                 <X onClick={() => setformData((prev) => prev.filter((p) => p.id !== f.id))} size={20} />
                                             </div>
 
-                                           
+
                                             <MyInput disabled={!f.tick} id={`${f.id}-name-formdata`} value={f.name} onChange={(e) => handleChangeValue(f.id, e, "name")} label="Name" />
                                             {f.type === "text" ? <MyInput disabled={!f.tick} id={`${f.id}-value-formdata`} value={f.value} onChange={(e) => handleChangeValue(f.id, e, "value")} className="min-w-60" label="Value" type={"text"} />
                                                 :

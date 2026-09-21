@@ -12,7 +12,7 @@ interface FormDataInputs {
     file: File | null | undefined;
     type: "file" | "text"
 }
-interface CustomHeader {
+interface KeyValuePair {
     id: string;
     tick: boolean;
     key: string,

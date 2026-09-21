@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
         const _authtype = formData.get('_authtype');
         const _authValues = formData.get('_authValues');
         const _customHeaders = formData.getAll('_customHeaders');
-
+        const _customParams = formData.getAll('_customParams');
         const safeParsed = RequestSchema.safeParse({
             _url,
             _method,
@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
             _authtype,
             _authValues,
             _customHeaders,
+            _customParams
         })
         if (safeParsed.success) {
             let finalbody: string | FormData = safeParsed.data._bodyType === "json" ? _json as string : "";
@@ -51,21 +52,25 @@ export async function POST(req: NextRequest) {
                 })
                 finalbody = fd;
             }
+            var url = safeParsed.data._url;
             const headers = new Headers();
             if (safeParsed.data._bodyType === "json")
                 headers.append('Content-Type', 'application/json');
             safeParsed.data._customHeaders.forEach((val) => {
                 headers.append(val.key, val.value)
             })
+            safeParsed.data._customParams.forEach((p) => {
+                url += url.includes("?") ? `&${p.key}=${p.value}` : `?${p.key}=${p.value}`
+            });
             let finalAuth = getFinalAuth(safeParsed.data._authtype, safeParsed.data._authValues as any);
             if (finalAuth)
                 headers.append(finalAuth.key, finalAuth.value);
 
             let time1 = performance.now();
-
-            const request = new Request(safeParsed.data._url, {
+            const request = new Request(url, {
                 method: safeParsed.data._method,
                 headers,
+
                 body: finalbody ? finalbody : null
             })
             const _res = await fetch(request);
