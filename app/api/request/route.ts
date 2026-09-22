@@ -70,7 +70,6 @@ export async function POST(req: NextRequest) {
             const request = new Request(url, {
                 method: safeParsed.data._method,
                 headers,
-
                 body: finalbody ? finalbody : null
             })
             const _res = await fetch(request);

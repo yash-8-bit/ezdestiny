@@ -99,7 +99,7 @@ const page = () => {
                     if (f.tick)
                         fd.append(`formdataValues<!-->${f.name}`, f.type === "text" ? f.value : f.file!)
                 })
-            fd.append("_url", url);
+            fd.append("_url", url.split("?")?.[0]);
             fd.append("_method", method);
             fd.append("_bodyType", bodyType);
             if (bodyType === "json" && method !== "GET")
